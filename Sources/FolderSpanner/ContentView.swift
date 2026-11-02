@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import FolderSpannerCore
 
@@ -85,8 +86,11 @@ struct ContentView: View {
 
     private var headerSection: some View {
         HStack(spacing: 12) {
-            Image(systemName: "square.stack.3d.down.right.fill")
-                .font(.system(size: 34)).foregroundColor(.accentColor)
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 42, height: 42)
+                .accessibilityLabel("FolderSpanner")
             VStack(alignment: .leading) {
                 Text("FolderSpanner").font(.title.bold())
                 Text("Suddividi grandi collezioni di file in cartelle ordinate")
