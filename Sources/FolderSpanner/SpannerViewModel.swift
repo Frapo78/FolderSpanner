@@ -44,6 +44,8 @@ final class SpannerViewModel: ObservableObject {
     @Published var includeHidden = false { didSet { invalidate() } }
     @Published var recursive = false { didSet { invalidate() } }
     @Published var disasterRecovery = true { didSet { invalidate() } }
+    @Published var generateCatalogAfterTransfer = true
+    @Published private(set) var isCatalogingAfterTransfer = false
 
     @Published private(set) var plan: SpanPlan?
     @Published private(set) var isPlanning = false
@@ -176,6 +178,8 @@ final class SpannerViewModel: ObservableObject {
         guard let plan, canExecute else { return }
         let selectedMode = mode
         let useRecovery = disasterRecovery && selectedMode == .move
+        let makeCatalog = generateCatalogAfterTransfer
+        guard let destinationRoot = destination else { return }
         isRunning = true
         completed = 0
         status = useRecovery ? L10n.tr("Preparo il registro di recupero…") : L10n.tr("Operazione in corso…")
@@ -194,7 +198,23 @@ final class SpannerViewModel: ObservableObject {
                     await self?.didTransferFile()
                 }
                 if recoveryPrepared { try SpanRecovery.discardCompletedManifest() }
-                await self?.finishTransfer(mode: selectedMode)
+                // The catalog is post-commit: failure or cancellation here never
+                // rolls back successfully transferred files.
+                if makeCatalog {
+                    await self?.markCataloging()
+                    do {
+                        _ = try SpanCatalog.generate(
+                            CatalogOptions(root: destinationRoot, recursive: true,
+                                           includeHidden: false, overwriteExisting: true),
+                            shouldCancel: { Task<Never, Never>.isCancelled }
+                        )
+                        await self?.finishTransfer(mode: selectedMode, catalogError: nil)
+                    } catch {
+                        await self?.finishTransfer(mode: selectedMode, catalogError: error)
+                    }
+                } else {
+                    await self?.finishTransfer(mode: selectedMode, catalogError: nil)
+                }
             } catch {
                 if recoveryPrepared {
                     await self?.markRestoring()
@@ -218,16 +238,27 @@ final class SpannerViewModel: ObservableObject {
         status = L10n.tr("Interruzione: ripristino dei file originali in corso…")
     }
 
-    private func finishTransfer(mode selectedMode: TransferMode) {
+    private func markCataloging() {
+        isCatalogingAfterTransfer = true
+        status = L10n.tr("Trasferimento completato. Generazione del catalogo…")
+    }
+
+    private func finishTransfer(mode selectedMode: TransferMode, catalogError: Error?) {
         isRunning = false
         isRecovering = false
+        isCatalogingAfterTransfer = false
         workTask = nil
         pendingRecovery = SpanRecovery.hasPendingRecovery()
         status = L10n.tr("Completato: %ld file %@.", completed, selectedMode == .move ? L10n.tr("spostati") : L10n.tr("copiati"))
+        if let catalogError {
+            status = L10n.tr("File trasferiti, ma il catalogo non è stato generato.")
+            if !(catalogError is CancellationError) { errorMessage = catalogError.localizedDescription }
+        }
         plan = nil
     }
 
     private func failTransfer(_ error: Error, recovery report: SpanRecovery.RecoveryReport?) {
+        isCatalogingAfterTransfer = false
         isRunning = false
         isRecovering = false
         workTask = nil
