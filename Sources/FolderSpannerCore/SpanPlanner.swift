@@ -4,6 +4,7 @@ public enum TransferMode: String, CaseIterable, Identifiable, Sendable {
     case move = "Sposta"
     case copy = "Copia"
     public var id: String { rawValue }
+    public var localizedName: String { L10n.tr(rawValue) }
 }
 
 public enum SortOrder: String, CaseIterable, Identifiable, Sendable {
@@ -12,6 +13,7 @@ public enum SortOrder: String, CaseIterable, Identifiable, Sendable {
     case smallestFirst = "Dimensione crescente"
     case largestFirst = "Dimensione decrescente"
     public var id: String { rawValue }
+    public var localizedName: String { L10n.tr(rawValue) }
 }
 
 public struct SpanOptions: Sendable {
@@ -64,7 +66,7 @@ public struct SpanPlan: Sendable {
 
 public struct SpannerError: LocalizedError, Sendable {
     public let message: String
-    public init(_ message: String) { self.message = message }
+    public init(_ message: String) { self.message = L10n.tr(message) }
     public var errorDescription: String? { message }
 }
 
@@ -109,7 +111,7 @@ public enum SpanPlanner {
         guard !name.isEmpty, name != ".", name != "..",
               !name.contains("/"), !name.contains(":"), !name.contains("\\"),
               !name.contains("{"), !name.contains("}") else {
-            throw SpannerError("Il modello produce un nome cartella non valido: \(name)")
+            throw SpannerError(L10n.tr("Il modello produce un nome cartella non valido: %@.", name))
         }
         return name
     }
@@ -196,15 +198,15 @@ public enum SpanPlanner {
             var result = FolderState(name: name)
             var existsAsDirectory: ObjCBool = false
             if (try? dir.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true {
-                throw SpannerError("La cartella di destinazione \(name) è un collegamento simbolico.")
+                throw SpannerError(L10n.tr("La cartella di destinazione %@ è un collegamento simbolico.", name))
             }
             if fm.fileExists(atPath: dir.path, isDirectory: &existsAsDirectory) {
-                guard existsAsDirectory.boolValue else { throw SpannerError("Esiste già un file chiamato \(name).") }
+                guard existsAsDirectory.boolValue else { throw SpannerError(L10n.tr("Esiste già un file chiamato %@.", name)) }
                 let items = try fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: Array(keys))
                 for item in items {
                     let values = try item.resourceValues(forKeys: keys)
                     guard values.isRegularFile == true && values.isSymbolicLink != true else {
-                        throw SpannerError("La cartella \(name) contiene sottocartelle o collegamenti: non verrà riutilizzata.")
+                        throw SpannerError(L10n.tr("La cartella %@ contiene sottocartelle o collegamenti: non verrà riutilizzata.", name))
                     }
                     result.count += 1
                     result.existingCount += 1
@@ -221,7 +223,7 @@ public enum SpanPlanner {
         for file in candidates {
             try checkCancellation()
             if let limit = options.maximumBytes, file.bytes > limit {
-                throw SpannerError("Il file \(file.url.lastPathComponent) supera da solo il limite in byte.")
+                throw SpannerError(L10n.tr("Il file %@ supera da solo il limite in byte.", file.url.lastPathComponent))
             }
             while true {
                 var folder = try state(for: index)
@@ -234,7 +236,7 @@ public enum SpanPlanner {
                 }
                 let name = file.url.lastPathComponent
                 guard !folder.filenames.contains(nameKey(name)) else {
-                    throw SpannerError("Conflitto nella cartella \(folder.name): \(name). Nessun file è stato spostato.")
+                    throw SpannerError(L10n.tr("Conflitto nella cartella %@: %@. Nessun file è stato spostato.", folder.name, name))
                 }
                 let destination = root.appendingPathComponent(folder.name, isDirectory: true)
                     .appendingPathComponent(name)
@@ -273,7 +275,7 @@ public enum SpanExecutor {
         let sourceType = sourceAttributes[.type] as? FileAttributeType
         let currentSize = (sourceAttributes[.size] as? NSNumber)?.int64Value
         guard sourceType == .typeRegular, currentSize == item.bytes else {
-            throw SpannerError("Il file origine è cambiato dall'anteprima: \(item.source.lastPathComponent)")
+            throw SpannerError(L10n.tr("Il file origine è cambiato dall'anteprima: %@", item.source.lastPathComponent))
         }
         let folder = item.destination.deletingLastPathComponent()
         if (try? folder.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true {
@@ -283,7 +285,7 @@ public enum SpanExecutor {
         // Avoid a full folder listing for every transfer (quadratic on slow drives).
         // Foundation's copyItem/moveItem refuse an existing destination.
         guard !fm.fileExists(atPath: item.destination.path) else {
-            throw SpannerError("Il file di destinazione esiste già: \(item.destination.path)")
+            throw SpannerError(L10n.tr("Il file di destinazione esiste già: %@", item.destination.path))
         }
         switch mode {
         case .move: try fm.moveItem(at: item.source, to: item.destination)
