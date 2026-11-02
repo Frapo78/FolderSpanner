@@ -1,0 +1,21 @@
+name: macOS Swift build and tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Swift and build tests
+        run: swift test
+      - name: Build unsigned ad-hoc app (Apple Silicon)
+        run: bash scripts/build-app.sh
+      - name: Zip application
+        run: ditto -c -k --sequesterRsrc --keepParent dist/FolderSpanner.app dist/FolderSpanner-macOS-arm64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FolderSpanner-macOS-arm64
+          path: dist/FolderSpanner-macOS-arm64.zip
