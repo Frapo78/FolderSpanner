@@ -134,7 +134,7 @@ struct ContentView: View {
         }
     }
 
-    private func folderListRow(_ folder: SpanFolder) -> some View {
+    private func folderListRow(_ folder: PlannedFolder) -> some View {
         HStack {
             Image(systemName: "folder")
             Text(folder.name).fontWeight(.medium)
