@@ -89,19 +89,9 @@ final class SpannerViewModel: ObservableObject {
             workTask = Task.detached(priority: .userInitiated) { [weak self] in
                 do {
                     let result = try SpanPlanner.plan(config)
-                    await MainActor.run {
-                        guard let self else { return }
-                        self.isPlanning = false
-                        guard self.revision == startRevision else { return }
-                        self.plan = result
-                        self.status = "Simulazione pronta: \(result.files.count) file in \(result.folders.count) cartelle."
-                    }
+                    await self?.finishPreview(result, revision: startRevision)
                 } catch {
-                    await MainActor.run {
-                        guard let self else { return }
-                        self.isPlanning = false
-                        if self.revision == startRevision { self.errorMessage = error.localizedDescription }
-                    }
+                    await self?.failPreview(error, revision: startRevision)
                 }
             }
         } catch {
@@ -120,24 +110,48 @@ final class SpannerViewModel: ObservableObject {
                 for file in plan.files {
                     try Task.checkCancellation()
                     try SpanExecutor.transfer(file, mode: selectedMode)
-                    await MainActor.run { self?.completed += 1 }
+                    await self?.didTransferFile()
                 }
-                await MainActor.run {
-                    guard let self else { return }
-                    self.isRunning = false
-                    self.status = "Completato: \(self.completed) file \(selectedMode == .move ? "spostati" : "copiati")."
-                    self.plan = nil
-                }
+                await self?.finishTransfer(mode: selectedMode)
             } catch {
-                await MainActor.run {
-                    guard let self else { return }
-                    self.isRunning = false
-                    self.status = "Interrotto dopo \(self.completed) file. Genera una nuova anteprima prima di ripartire."
-                    self.plan = nil
-                    self.errorMessage = error.localizedDescription
-                }
+                await self?.failTransfer(error)
             }
         }
+    }
+
+    // These methods are MainActor-isolated. Background tasks call them via
+    // actor hops, avoiding captured mutable weak references in @Sendable closures.
+    private func finishPreview(_ result: SpanPlan, revision startRevision: Int) {
+        isPlanning = false
+        workTask = nil
+        guard revision == startRevision else { return }
+        plan = result
+        status = "Simulazione pronta: \(result.files.count) file in \(result.folders.count) cartelle."
+    }
+
+    private func failPreview(_ error: Error, revision startRevision: Int) {
+        isPlanning = false
+        workTask = nil
+        if revision == startRevision { errorMessage = error.localizedDescription }
+    }
+
+    private func didTransferFile() {
+        completed += 1
+    }
+
+    private func finishTransfer(mode selectedMode: TransferMode) {
+        isRunning = false
+        workTask = nil
+        status = "Completato: \(completed) file \(selectedMode == .move ? "spostati" : "copiati")."
+        plan = nil
+    }
+
+    private func failTransfer(_ error: Error) {
+        isRunning = false
+        workTask = nil
+        status = "Interrotto dopo \(completed) file. Genera una nuova anteprima prima di ripartire."
+        plan = nil
+        errorMessage = error.localizedDescription
     }
 
     func cancel() { workTask?.cancel() }
