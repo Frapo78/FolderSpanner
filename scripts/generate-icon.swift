@@ -10,8 +10,10 @@ let image = NSImage(size: size)
 
 func fillRound(_ rect: NSRect, radius: CGFloat, top: NSColor, bottom: NSColor) {
     let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+    NSGraphicsContext.saveGraphicsState()
     path.addClip()
     NSGradient(starting: top, ending: bottom)?.draw(in: path, angle: 90)
+    NSGraphicsContext.restoreGraphicsState()
 }
 
 func drawFolder(_ rect: NSRect, colorTop: NSColor, colorBottom: NSColor,
@@ -37,7 +39,6 @@ func drawFolder(_ rect: NSRect, colorTop: NSColor, colorBottom: NSColor,
 }
 
 image.lockFocus()
-defer { image.unlockFocus() }
 
 let background = NSBezierPath(roundedRect: NSRect(x: 30, y: 30, width: 964, height: 964),
                               xRadius: 215, yRadius: 215)
@@ -73,6 +74,8 @@ for (i, x) in [84.0, 368.0, 652.0].enumerated() {
                colorTop: goldTop, colorBottom: goldBottom, tabWidth: 120,
                label: String(format: "%03d", i + 1))
 }
+
+image.unlockFocus()
 
 guard let tiff = image.tiffRepresentation,
       let bitmap = NSBitmapImageRep(data: tiff),
