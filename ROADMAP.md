@@ -40,3 +40,12 @@ All versions remain free and open source.
 - [x] Bundle translations inside downloadable Apple Silicon ZIP
 - [x] Validate key and format placeholder coverage before every build
 - [ ] Physical Mac GUI checks for text truncation and per-app language switching
+
+## Catalog and icon consistency
+- [x] Catalog Markdown in destination root after completed transfers
+- [x] Independent catalog tool with optional recursive and hidden-file scan
+- [x] Cancellable incremental metadata-only scan with atomic publication
+- [x] Safe existing-catalog replacement; standalone confirmation required
+- [x] Source and destination relative-path listing with counts and byte totals
+- [x] Share the real application icon between Dock/Finder and the window header
+- [ ] Verify GUI workflows and external-disk behavior on physical Apple Silicon Mac

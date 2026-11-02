@@ -1,20 +1,33 @@
+import AppKit
 import SwiftUI
 import FolderSpannerCore
 
 struct ContentView: View {
     @StateObject private var model = SpannerViewModel()
     @StateObject private var updater = GitHubUpdater()
+    @StateObject private var catalog = CatalogViewModel()
+    @State private var selectedTool = 0
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 headerSection
-                locationSection
-                rulesSection
-                recoverySection
-                previewSection
-                statusSection
-                actionSection
+                Picker("Strumento", selection: $selectedTool) {
+                    Text("Suddivisione file").tag(0)
+                    Text("Crea catalogo").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .disabled(model.isRunning || model.isPlanning || model.isRecovering || catalog.isRunning)
+                if selectedTool == 0 {
+                    locationSection
+                    rulesSection
+                    recoverySection
+                    previewSection
+                    statusSection
+                    actionSection
+                } else {
+                    CatalogPanel(model: catalog)
+                }
             }
             .padding(22)
             .frame(minWidth: 820)
@@ -29,7 +42,12 @@ struct ContentView: View {
                 role: model.mode == .move ? .destructive : nil
             ) { model.executeConfirmed() }
         } message: {
-            Text(L10n.tr("%ld file. Prima di procedere conserva un backup indipendente dei dati.", model.plan?.files.count ?? 0))
+            VStack(alignment: .leading) {
+                Text(L10n.tr("%ld file. Prima di procedere conserva un backup indipendente dei dati.", model.plan?.files.count ?? 0))
+                if model.generateCatalogAfterTransfer {
+                    Text("Al termine verrà creato o sostituito FolderSpanner-catalog.md nella destinazione.")
+                }
+            }
         }
         .alert(
             "FolderSpanner",
@@ -56,7 +74,7 @@ struct ContentView: View {
                         Button("Più tardi") { updater.availableRelease = nil }
                         Button("Scarica e sostituisci") { updater.install(release) }
                             .buttonStyle(.borderedProminent)
-                            .disabled(model.isRunning || model.isPlanning || model.pendingRecovery)
+                            .disabled(model.isRunning || model.isPlanning || model.pendingRecovery || catalog.isRunning)
                     }
                 }
                 Text(updater.status).font(.caption).foregroundStyle(.secondary)
@@ -68,8 +86,11 @@ struct ContentView: View {
 
     private var headerSection: some View {
         HStack(spacing: 12) {
-            Image(systemName: "square.stack.3d.down.right.fill")
-                .font(.system(size: 34)).foregroundColor(.accentColor)
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 42, height: 42)
+                .accessibilityLabel("FolderSpanner")
             VStack(alignment: .leading) {
                 Text("FolderSpanner").font(.title.bold())
                 Text("Suddividi grandi collezioni di file in cartelle ordinate")
@@ -81,7 +102,7 @@ struct ContentView: View {
             } label: {
                 Label("Aggiornamenti", systemImage: "arrow.triangle.2.circlepath")
             }
-            .disabled(updater.isWorking || model.isRunning || model.isPlanning)
+            .disabled(updater.isWorking || model.isRunning || model.isPlanning || catalog.isRunning)
         }
     }
 
@@ -145,6 +166,9 @@ struct ContentView: View {
                     Toggle("Includi file nascosti", isOn: $model.includeHidden)
                     Toggle("Includi sottocartelle", isOn: $model.recursive)
                 }
+                Toggle("Genera catalogo Markdown dopo il trasferimento", isOn: $model.generateCatalogAfterTransfer)
+                Text("Il catalogo viene creato nella destinazione dopo il trasferimento completo e può sostituire un catalogo precedente.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             .padding(5)
         }
@@ -220,7 +244,11 @@ struct ContentView: View {
     private var statusSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(model.status).foregroundStyle(.secondary)
-            if model.isRunning {
+            if model.isRunning && model.isCatalogingAfterTransfer {
+                ProgressView()
+                    .accessibilityLabel("Generazione catalogo in corso")
+                Button("Annulla catalogo") { model.cancel() }
+            } else if model.isRunning {
                 ProgressView(value: Double(model.completed),
                              total: Double(max(model.plan?.files.count ?? 1, 1)))
                 .accessibilityLabel("Avanzamento copia o spostamento")
