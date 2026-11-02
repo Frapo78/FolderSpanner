@@ -7,7 +7,7 @@ var products: [Product] = [
     .library(name: "FolderSpannerCore", targets: ["FolderSpannerCore"])
 ]
 var targets: [Target] = [
-    .target(name: "FolderSpannerCore"),
+    .target(name: "FolderSpannerCore", resources: [.process("Resources")]),
     .testTarget(name: "FolderSpannerCoreTests", dependencies: ["FolderSpannerCore"])
 ]
 
@@ -19,6 +19,7 @@ targets.append(.executableTarget(name: "FolderSpanner", dependencies: ["FolderSp
 let package = Package(
     name: "FolderSpanner",
     platforms: [.macOS(.v13)],
+    defaultLocalization: "it",
     products: products,
     targets: targets
 )
