@@ -11,3 +11,6 @@
 
 - Every change to `main` must keep the automatic macOS preview release workflow healthy; never publish failed tests or a failed build.
 - Release ZIPs contain the native `.app` and a SHA-256 manifest, and must clearly disclose ad-hoc signing and the lack of Apple notarization.
+
+- Do not claim guaranteed disaster recovery after disk failures or external edits. Rollback is same-volume and may require manual intervention; preserve the manifest on conflicts.
+- Keep developer backups during in-app updates and never install without explicit consent, checksum and bundle identity verification.
