@@ -130,7 +130,7 @@ final class SpannerViewModel: ObservableObject {
             workTask = Task.detached(priority: .userInitiated) { [weak self] in
                 do {
                     let result = try SpanPlanner.plan(config, shouldCancel: {
-                        Task<Void, Never>.isCancelled
+                        Task<Never, Never>.isCancelled
                     }, progress: { done, total in
                         Task { @MainActor [weak self] in
                             self?.updatePreviewProgress(done: done, total: total, revision: startRevision)
