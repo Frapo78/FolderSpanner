@@ -116,4 +116,66 @@ final class SpanPlannerTests: XCTestCase {
         XCTAssertThrowsError(try SpanPlanner.plan(recursive))
     }
 
+
+    func testThreeDigitFolderNames() throws {
+        XCTAssertEqual(try SpanPlanner.folderName(pattern: "{n:03}", index: 1), "001")
+        XCTAssertEqual(try SpanPlanner.folderName(pattern: "{n:03}", index: 23), "023")
+        XCTAssertEqual(try SpanPlanner.folderName(pattern: "{n:03}", index: 123), "123")
+    }
+
+    func testPreviewIsCancellableWithoutModifyingFiles() throws {
+        try add("game.adf", bytes: 8)
+        XCTAssertThrowsError(try SpanPlanner.plan(
+            SpanOptions(source: source, destinationRoot: destination),
+            shouldCancel: { true }
+        )) { error in
+            XCTAssertTrue(error is CancellationError)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.appendingPathComponent("1").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.appendingPathComponent("game.adf").path))
+    }
+
+    func testDisasterRecoveryRestoresOriginalStateAndCleansFolders() throws {
+        for name in ["a.adf", "b.adf", "c.adf"] { try add(name, bytes: 12) }
+        let journal = sandbox.appendingPathComponent("test-recovery.json")
+        let options = SpanOptions(source: source, destinationRoot: destination,
+                                  maximumFiles: 2, folderPattern: "{n:03}")
+        let plan = try SpanPlanner.plan(options)
+        try SpanRecovery.prepare(plan, journalFile: journal)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: journal.path))
+        for file in plan.files.prefix(2) { try SpanExecutor.transfer(file, mode: .move) }
+        let report = try SpanRecovery.restore(journalFile: journal)
+        XCTAssertTrue(report.complete, report.issues.joined(separator: "\n"))
+        XCTAssertEqual(report.restored, 2)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: journal.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.appendingPathComponent("001").path))
+        for name in ["a.adf", "b.adf", "c.adf"] {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: source.appendingPathComponent(name).path))
+        }
+    }
+
+    func testDisasterRecoveryWillNotOverwriteExternalChanges() throws {
+        try add("a.adf", bytes: 5)
+        let journal = sandbox.appendingPathComponent("test-recovery.json")
+        let plan = try SpanPlanner.plan(SpanOptions(source: source, destinationRoot: destination))
+        try SpanRecovery.prepare(plan, journalFile: journal)
+        try SpanExecutor.transfer(plan.files[0], mode: .move)
+        try add("a.adf", bytes: 7) // Another process created a conflicting source.
+        let first = try SpanRecovery.restore(journalFile: journal)
+        XCTAssertFalse(first.complete)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: journal.path))
+        XCTAssertEqual(try Data(contentsOf: source.appendingPathComponent("a.adf")).count, 7)
+        try FileManager.default.removeItem(at: source.appendingPathComponent("a.adf"))
+        let second = try SpanRecovery.restore(journalFile: journal)
+        XCTAssertTrue(second.complete)
+        XCTAssertEqual(try Data(contentsOf: source.appendingPathComponent("a.adf")).count, 5)
+    }
+
+    func testRecoveryJournalIsNotCreatedByPreview() throws {
+        try add("a.adf", bytes: 10)
+        let journal = sandbox.appendingPathComponent("preview-only.json")
+        let plan = try SpanPlanner.plan(SpanOptions(source: source, destinationRoot: destination))
+        XCTAssertEqual(plan.files.count, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: journal.path))
+    }
 }
