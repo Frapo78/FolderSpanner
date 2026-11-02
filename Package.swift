@@ -18,8 +18,8 @@ targets.append(.executableTarget(name: "FolderSpanner", dependencies: ["FolderSp
 
 let package = Package(
     name: "FolderSpanner",
-    platforms: [.macOS(.v13)],
     defaultLocalization: "it",
+    platforms: [.macOS(.v13)],
     products: products,
     targets: targets
 )
