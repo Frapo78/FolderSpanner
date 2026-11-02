@@ -34,8 +34,8 @@ public enum SpanRecovery {
             .appendingPathComponent("pending-recovery.json")
     }
 
-    public static func hasPendingRecovery(fileManager fm: FileManager = .default) -> Bool {
-        guard let path = try? manifestURL(fileManager: fm) else { return false }
+    public static func hasPendingRecovery(journalFile: URL? = nil, fileManager fm: FileManager = .default) -> Bool {
+        guard let path = try? (journalFile ?? manifestURL(fileManager: fm)) else { return false }
         return fm.fileExists(atPath: path.path)
     }
 
@@ -50,8 +50,9 @@ public enum SpanRecovery {
     /// Preflights every source and writes the manifest before any move.
     /// No journal, snapshot or additional file allocation occurs with recovery disabled.
     @discardableResult
-    public static func prepare(_ plan: SpanPlan, fileManager fm: FileManager = .default) throws -> URL {
-        let url = try manifestURL(fileManager: fm)
+    public static func prepare(_ plan: SpanPlan, journalFile: URL? = nil,
+                               fileManager fm: FileManager = .default) throws -> URL {
+        let url = try journalFile ?? manifestURL(fileManager: fm)
         guard !fm.fileExists(atPath: url.path) else {
             throw SpannerError("Esiste un precedente recupero in sospeso. Ripristinalo prima di iniziare un altro spostamento.")
         }
@@ -65,6 +66,7 @@ public enum SpanRecovery {
 
         var entries: [Entry] = []
         var folders: Set<String> = []
+        var checkedDirectories: Set<String> = []
         for file in plan.files {
             let attributes = try fm.attributesOfItem(atPath: file.source.path)
             guard attributes[.type] as? FileAttributeType == .typeRegular,
@@ -72,8 +74,11 @@ public enum SpanRecovery {
                   let inode = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value else {
                 throw SpannerError("Il file origine è cambiato durante la preparazione: \(file.source.lastPathComponent)")
             }
-            guard try deviceNumber(of: file.source.deletingLastPathComponent().path, fileManager: fm) == sourceDevice else {
-                throw SpannerError("Lo spostamento include file su volumi differenti.")
+            let sourceParent = file.source.deletingLastPathComponent().path
+            if checkedDirectories.insert(sourceParent).inserted {
+                guard try deviceNumber(of: sourceParent, fileManager: fm) == sourceDevice else {
+                    throw SpannerError("Lo spostamento include file su volumi differenti.")
+                }
             }
             guard !fm.fileExists(atPath: file.destination.path) else {
                 throw SpannerError("Destinazione occupata: \(file.destination.path)")
@@ -95,16 +100,18 @@ public enum SpanRecovery {
         return url
     }
 
-    public static func discardCompletedManifest(fileManager fm: FileManager = .default) throws {
-        let url = try manifestURL(fileManager: fm)
+    public static func discardCompletedManifest(journalFile: URL? = nil,
+                                                fileManager fm: FileManager = .default) throws {
+        let url = try journalFile ?? manifestURL(fileManager: fm)
         if fm.fileExists(atPath: url.path) { try fm.removeItem(at: url) }
     }
 
     /// Can also run on the next launch if the app terminated unexpectedly.
     /// The manifest remains on disk until every item is safely restored.
     @discardableResult
-    public static func restore(fileManager fm: FileManager = .default) throws -> RecoveryReport {
-        let url = try manifestURL(fileManager: fm)
+    public static func restore(journalFile: URL? = nil,
+                               fileManager fm: FileManager = .default) throws -> RecoveryReport {
+        let url = try journalFile ?? manifestURL(fileManager: fm)
         let manifest = try JSONDecoder().decode(Manifest.self, from: Data(contentsOf: url))
         guard manifest.version == 1 else { throw SpannerError("Versione del registro di recupero non supportata.") }
         var restored = 0
