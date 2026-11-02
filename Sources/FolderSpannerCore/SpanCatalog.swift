@@ -159,15 +159,15 @@ public enum SpanCatalog {
         try handle.close()
         try checkCancel()
 
-        // Same-volume atomic publication; linkItem refuses to replace a file.
+        // Same-volume publication: moveItem refuses existing targets and works
+        // on FAT/exFAT too (hard links are not available on those disks).
         // Explicit overwrite uses rename, preserving the prior file on failed scan.
         if options.overwriteExisting {
             if rename(temporary.path, output.path) != 0 {
                 throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
             }
         } else {
-            try fm.linkItem(at: temporary, to: output)
-            try fm.removeItem(at: temporary)
+            try fm.moveItem(at: temporary, to: output)
         }
         progress(fileCount)
         return CatalogReport(url: output, fileCount: fileCount,
