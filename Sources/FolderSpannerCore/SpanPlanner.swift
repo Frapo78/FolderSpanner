@@ -114,7 +114,15 @@ public enum SpanPlanner {
         return name
     }
 
-    public static func plan(_ options: SpanOptions, fileManager fm: FileManager = .default) throws -> SpanPlan {
+    public static func plan(_ options: SpanOptions, fileManager fm: FileManager = .default,
+                            shouldCancel: @Sendable () -> Bool = { false },
+                            progress: @Sendable (Int, Int) -> Void = { _, _ in }) throws -> SpanPlan {
+        func checkCancellation() throws {
+            if shouldCancel() { throw CancellationError() }
+        }
+        try checkCancellation()
+        progress(0, 0) // Indeterminate scan: number of files is not yet known.
+
         guard options.startingIndex >= 0, options.maximumFiles >= 0,
               options.maximumFiles > 0 || options.maximumBytes != nil,
               options.maximumBytes == nil || options.maximumBytes! > 0 else {
@@ -140,8 +148,10 @@ public enum SpanPlanner {
                                          .isDirectoryKey, .isHiddenKey, .fileSizeKey]
         var candidates: [Candidate] = []
         func visit(_ directory: URL) throws {
+            try checkCancellation()
             let contents = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: Array(keys))
             for item in contents {
+                try checkCancellation()
                 let values = try item.resourceValues(forKeys: keys)
                 if !options.includeHidden && (item.lastPathComponent.hasPrefix(".") || values.isHidden == true) {
                     continue
@@ -209,6 +219,7 @@ public enum SpanPlanner {
         var index = options.startingIndex
         var planned: [PlannedFile] = []
         for file in candidates {
+            try checkCancellation()
             if let limit = options.maximumBytes, file.bytes > limit {
                 throw SpannerError("Il file \(file.url.lastPathComponent) supera da solo il limite in byte.")
             }
@@ -234,6 +245,7 @@ public enum SpanPlanner {
                 folder.newBytes += file.bytes
                 folder.filenames.insert(nameKey(name))
                 stateCache[index] = folder
+                if planned.count % 64 == 0 || planned.count == candidates.count { progress(planned.count, candidates.count) }
                 break
             }
         }
@@ -268,11 +280,9 @@ public enum SpanExecutor {
             throw SpannerError("La cartella di destinazione è un collegamento simbolico.")
         }
         try fm.createDirectory(at: folder, withIntermediateDirectories: true)
-        let existingNames = try fm.contentsOfDirectory(atPath: folder.path)
-        guard !existingNames.contains(where: {
-            $0.precomposedStringWithCanonicalMapping.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX")) ==
-            item.destination.lastPathComponent.precomposedStringWithCanonicalMapping.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX"))
-        }) else {
+        // Avoid a full folder listing for every transfer (quadratic on slow drives).
+        // Foundation's copyItem/moveItem refuse an existing destination.
+        guard !fm.fileExists(atPath: item.destination.path) else {
             throw SpannerError("Il file di destinazione esiste già: \(item.destination.path)")
         }
         switch mode {
