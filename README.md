@@ -27,7 +27,7 @@ FolderSpanner divides large file collections into numbered folders. Built with *
 - Choose **Copy** or **Move**. Hidden files and recursive traversal are opt-in.
 - **Simulate first:** inspect a summary without changing anything. Explicit confirmation required to transfer.
 - No overwrite: existing target filenames are rejected during planning and re-checked during execution.
-- For interrupted **moves**, re-scan to fill partially populated folders; already moved files are no longer in the source.
+- With **Disaster Recovery** enabled, interrupted same-volume moves attempt a rollback, and an unfinished recovery journal can be retried after restarting the app.
 - Cancel between files, see progress and a status summary.
 
 ## Download a compiled app (macOS Apple Silicon)
@@ -64,15 +64,26 @@ open dist/FolderSpanner.app
 
 `build-app.sh` creates an **ad-hoc signed** local app (not Apple-notarized). macOS may require manual approval to open apps built outside the App Store. The bundle is placed in `dist/` and can be copied to `/Applications` if desired. CI generates ZIP assets in the [Releases](https://github.com/Frapo78/FolderSpanner/releases) section after successful builds. A regular push creates a prerelease; a semver tag creates a versioned release.
 
-## Example: Commodore Amiga TOSEC ADF
+## Example: Split a large folder into numbered batches
 
-- Source: `/Volumes/RETRO256/RETRO/AMIGA/Games/[ADF]/Commodore Amiga - Games - [ADF] (TOSEC 2012-02-27)`
-- Target root: `/Volumes/RETRO256/RETRO/AMIGA/Games/[ADF]`
-- Click **Preset Amiga (da 2)** (then select the two folders).
-- Rules: max files `200`, max MB `0`, pattern `{n}`, starting number `2`.
-- Click **Simula**, review the grouping, then confirm **Sposta file**.
+Suppose you have a directory containing 450 files and want to distribute them into subfolders holding at most 200 files each.
 
-Folder `1` will not be touched by these settings.
+- **Source folder:** `/my/path/to/dir/bigdir/`
+- **Destination root:** `/my/path/to/dest/`
+- Select both locations with the folder pickers, then click **Preset tre cifre** (three-digit names).
+- **Rules:** maximum files per folder `200`, maximum size `0` (unlimited), name pattern `{n:03}`, starting number `1`, sorting `Nome A → Z`.
+- Click **Anteprima** to review the planned batches without modifying files. When ready, choose **Copia** or **Sposta** and explicitly confirm.
+
+For 450 files, the resulting layout will be:
+
+```text
+/my/path/to/dest/
+├── 001/    # 200 files
+├── 002/    # 200 files
+└── 003/    #  50 files
+```
+
+These are illustrative paths: replace them with existing directories on your own machine. No actual file is moved or copied during the preview.
 
 ## Important limitations and safety
 
@@ -82,7 +93,7 @@ Folder `1` will not be touched by these settings.
 - For copied files, repeating an interrupted batch is not yet an automatic resume workflow; existing copies produce a collision. Move resumability is supported by re-scanning the remaining source files and occupied destination folders.
 - Files larger than the configured maximum size stop planning with an error; size caps are strictly respected.
 - Existing output folders containing subfolders or symlinks are rejected for reuse. Empty names, invalid numbering patterns and a target nested inside the source are rejected.
-- Multiple independent destination roots, persistent operation journals, drag-and-drop and notarized distribution are future work.
+- Multiple independent destination roots, durable recovery for interrupted copies, drag-and-drop and notarized distribution are future work.
 
 ## Development
 
