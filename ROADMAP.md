@@ -33,3 +33,10 @@ All versions remain free and open source.
 - [x] GitHub release update check, ZIP hash verification, guarded app replacement
 - [ ] Green macOS CI, app UX inspection and physical-Mac validation
 - [ ] Further recovery robustness against simultaneous filesystem changes
+
+## v0.2 multilingual localization
+- [x] Native macOS resources for it, en, de, fr, es, zh-Hans and ja
+- [x] Translate interface, previews, recovery and updater
+- [x] Bundle translations inside downloadable Apple Silicon ZIP
+- [x] Validate key and format placeholder coverage before every build
+- [ ] Physical Mac GUI checks for text truncation and per-app language switching
