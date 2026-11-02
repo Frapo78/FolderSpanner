@@ -11,7 +11,7 @@ final class SpannerViewModel: ObservableObject {
     @Published var maxMBText = "0" { didSet { invalidate() } }
     @Published var pattern = "{n}" { didSet { invalidate() } }
     @Published var startingIndexText = "1" { didSet { invalidate() } }
-    @Published var order: SortOrder = .ascending { didSet { invalidate() } }
+    @Published var order: FolderSpannerCore.SortOrder = .ascending { didSet { invalidate() } }
     @Published var mode: TransferMode = .move { didSet { invalidate() } }
     @Published var includeHidden = false { didSet { invalidate() } }
     @Published var recursive = false { didSet { invalidate() } }
