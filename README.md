@@ -6,6 +6,29 @@ FolderSpanner divides large file collections into numbered folders. Built with *
 
 > **Status: v0.2.0 development preview.** Automated macOS tests and app compilation have passed on the pull request. GitHub publishes an Apple Silicon ZIP after successful tests on `main`. The UI and updater still require hands-on validation on a physical Mac. The app is ad-hoc signed, **not** Developer ID signed or notarized.
 
+## Supported languages
+
+FolderSpanner is localized using native macOS `.lproj/Localizable.strings` resources:
+
+- Italian (`it`, original language and fallback)
+- English (`en`)
+- German (`de`)
+- French (`fr`)
+- Spanish (`es`)
+- Simplified Chinese (`zh-Hans`)
+- Japanese (`ja`)
+
+The app follows your macOS language preference; on supported macOS versions, choose a language specifically for FolderSpanner under **System Settings → General → Language & Region → Applications**. Localization covers the interface, presets, progress, alerts, recovery errors and updater messages. Folder naming *patterns* are deliberately kept stable when the display language changes, avoiding unexpected naming changes during a resumed job. Technical filenames and full paths are never translated.
+
+To validate translated tables before building:
+
+```sh
+python3 scripts/check-localizations.py
+swift test
+```
+
+The packaging script copies every `.lproj` into `FolderSpanner.app/Contents/Resources` so downloaded ZIP releases include all seven languages. No external localization dependencies are required.
+
 ## Novità in sviluppo: v0.2
 
 - **Preset nomi:** numerico, tre cifre (001, 002), quattro cifre, Batch, Parte, Cartella, con data, personalizzato.

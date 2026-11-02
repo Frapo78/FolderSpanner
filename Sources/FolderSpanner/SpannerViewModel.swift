@@ -53,7 +53,7 @@ final class SpannerViewModel: ObservableObject {
     @Published private(set) var previewProcessed = 0
     @Published private(set) var previewTotal = 0
     @Published private(set) var completed = 0
-    @Published var status = "Scegli origine e destinazione, poi genera l'anteprima."
+    @Published var status = L10n.tr("Scegli origine e destinazione, poi genera l'anteprima.")
     @Published var errorMessage: String?
     @Published var showConfirmation = false
 
@@ -83,7 +83,7 @@ final class SpannerViewModel: ObservableObject {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = "Seleziona"
+        panel.prompt = L10n.tr("Seleziona")
         if panel.runModal() == .OK, let url = panel.url { save(url) }
     }
 
@@ -125,7 +125,7 @@ final class SpannerViewModel: ObservableObject {
             isPlanning = true
             previewProcessed = 0
             previewTotal = 0
-            status = "Analisi in corso: nessun file viene modificato…"
+            status = L10n.tr("Analisi in corso: nessun file viene modificato…")
             let startRevision = revision
             workTask = Task.detached(priority: .userInitiated) { [weak self] in
                 do {
@@ -158,7 +158,7 @@ final class SpannerViewModel: ObservableObject {
         previewProcessed = result.files.count
         previewTotal = result.files.count
         plan = result
-        status = "Simulazione pronta: \(result.files.count) file in \(result.folders.count) cartelle."
+        status = L10n.tr("Simulazione pronta: %ld file in %ld cartelle.", result.files.count, result.folders.count)
     }
 
     private func failPreview(_ error: Error, revision startRevision: Int) {
@@ -166,7 +166,7 @@ final class SpannerViewModel: ObservableObject {
         workTask = nil
         guard revision == startRevision else { return }
         if error is CancellationError {
-            status = "Anteprima annullata. Nessun file è stato modificato."
+            status = L10n.tr("Anteprima annullata. Nessun file è stato modificato.")
         } else {
             errorMessage = error.localizedDescription
         }
@@ -178,7 +178,7 @@ final class SpannerViewModel: ObservableObject {
         let useRecovery = disasterRecovery && selectedMode == .move
         isRunning = true
         completed = 0
-        status = useRecovery ? "Preparo il registro di recupero…" : "Operazione in corso…"
+        status = useRecovery ? L10n.tr("Preparo il registro di recupero…") : L10n.tr("Operazione in corso…")
 
         workTask = Task.detached(priority: .userInitiated) { [weak self] in
             var recoveryPrepared = false
@@ -215,7 +215,7 @@ final class SpannerViewModel: ObservableObject {
 
     private func markRestoring() {
         isRecovering = true
-        status = "Interruzione: ripristino dei file originali in corso…"
+        status = L10n.tr("Interruzione: ripristino dei file originali in corso…")
     }
 
     private func finishTransfer(mode selectedMode: TransferMode) {
@@ -223,7 +223,7 @@ final class SpannerViewModel: ObservableObject {
         isRecovering = false
         workTask = nil
         pendingRecovery = SpanRecovery.hasPendingRecovery()
-        status = "Completato: \(completed) file \(selectedMode == .move ? "spostati" : "copiati")."
+        status = L10n.tr("Completato: %ld file %@.", completed, selectedMode == .move ? L10n.tr("spostati") : L10n.tr("copiati"))
         plan = nil
     }
 
@@ -234,13 +234,13 @@ final class SpannerViewModel: ObservableObject {
         pendingRecovery = SpanRecovery.hasPendingRecovery()
         plan = nil
         if let report, report.complete {
-            status = "Interrotto. Ripristinati \(report.restored) file; stato precedente recuperato."
+            status = L10n.tr("Interrotto. Ripristinati %ld file; stato precedente recuperato.", report.restored)
         } else if pendingRecovery {
-            status = "Attenzione: ripristino incompleto. Registro conservato."
+            status = L10n.tr("Attenzione: ripristino incompleto. Registro conservato.")
             let details = report?.issues.prefix(5).joined(separator: "\n") ?? error.localizedDescription
-            errorMessage = "Alcuni file richiedono verifica manuale:\n\(details)"
+            errorMessage = L10n.tr("Alcuni file richiedono verifica manuale:\n%@", details)
         } else {
-            status = "Interrotto dopo \(completed) file. Nessun rollback disponibile."
+            status = L10n.tr("Interrotto dopo %ld file. Nessun rollback disponibile.", completed)
             if !(error is CancellationError) { errorMessage = error.localizedDescription }
         }
     }
@@ -248,7 +248,7 @@ final class SpannerViewModel: ObservableObject {
     func restorePendingRecovery() {
         guard pendingRecovery && !isRunning && !isPlanning && !isRecovering else { return }
         isRecovering = true
-        status = "Ripristino del registro precedente…"
+        status = L10n.tr("Ripristino del registro precedente…")
         workTask = Task.detached(priority: .userInitiated) { [weak self] in
             do {
                 let report = try SpanRecovery.restore()
@@ -263,7 +263,7 @@ final class SpannerViewModel: ObservableObject {
         pendingRecovery = SpanRecovery.hasPendingRecovery()
         isRecovering = false
         workTask = nil
-        status = report.complete ? "Ripristino completato: \(report.restored) file." : "Ripristino incompleto: controlla il registro."
+        status = report.complete ? L10n.tr("Ripristino completato: %ld file.", report.restored) : L10n.tr("Ripristino incompleto: controlla il registro.")
         if !report.complete { errorMessage = report.issues.prefix(6).joined(separator: "\n") }
     }
 

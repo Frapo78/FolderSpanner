@@ -25,11 +25,11 @@ struct ContentView: View {
             isPresented: $model.showConfirmation
         ) {
             Button(
-                model.mode == .move ? "Conferma spostamento" : "Conferma copia",
+                model.mode == .move ? L10n.tr("Conferma spostamento") : L10n.tr("Conferma copia"),
                 role: model.mode == .move ? .destructive : nil
             ) { model.executeConfirmed() }
         } message: {
-            Text("\(model.plan?.files.count ?? 0) file. Prima di procedere conserva un backup indipendente dei dati.")
+            Text(L10n.tr("%ld file. Prima di procedere conserva un backup indipendente dei dati.", model.plan?.files.count ?? 0))
         }
         .alert(
             "FolderSpanner",
@@ -40,7 +40,7 @@ struct ContentView: View {
         ) {
             Button("OK", role: .cancel) { model.errorMessage = nil }
         } message: {
-            Text(model.errorMessage ?? "Errore sconosciuto")
+            Text(model.errorMessage ?? L10n.tr("Errore sconosciuto"))
         }
         .sheet(item: $updater.availableRelease) { release in
             VStack(alignment: .leading, spacing: 16) {
@@ -102,7 +102,7 @@ struct ContentView: View {
                     Text("Preset nome cartelle").frame(width: 180, alignment: .leading)
                     Picker("Preset", selection: $model.namingPreset) {
                         ForEach(NamingPreset.allCases) { preset in
-                            Text(preset.rawValue).tag(preset)
+                            Text(L10n.tr(preset.rawValue)).tag(preset)
                         }
                     }
                     .labelsHidden()
@@ -128,7 +128,7 @@ struct ContentView: View {
                     Text("Ordinamento").frame(width: 180, alignment: .leading)
                     Picker("Ordinamento", selection: $model.order) {
                         ForEach(FolderSpannerCore.SortOrder.allCases) { order in
-                            Text(order.rawValue).tag(order)
+                            Text(order.localizedName).tag(order)
                         }
                     }
                     .labelsHidden().frame(width: 210)
@@ -136,7 +136,7 @@ struct ContentView: View {
                     Text("Operazione")
                     Picker("Operazione", selection: $model.mode) {
                         ForEach(TransferMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
+                            Text(mode.localizedName).tag(mode)
                         }
                     }
                     .labelsHidden().frame(width: 130)
@@ -176,18 +176,18 @@ struct ContentView: View {
         GroupBox("Anteprima · nessuna modifica ai file") {
             VStack(alignment: .leading, spacing: 8) {
                 if let plan = model.plan {
-                    Text("\(plan.files.count) file · \(ByteCountFormatter.string(fromByteCount: plan.totalBytes, countStyle: .file)) · \(plan.folders.count) cartelle")
+                    Text(L10n.tr("%ld file · %@ · %ld cartelle", plan.files.count, ByteCountFormatter.string(fromByteCount: plan.totalBytes, countStyle: .file), plan.folders.count))
                         .font(.headline)
                     List(plan.folders) { folder in
                         HStack {
                             Image(systemName: "folder")
                             Text(folder.name).fontWeight(.medium)
                             Spacer()
-                            Text("+\(folder.newFileCount) file")
+                            Text(L10n.tr("+%ld file", folder.newFileCount))
                             Text(ByteCountFormatter.string(fromByteCount: folder.newBytes, countStyle: .file))
                                 .foregroundStyle(.secondary)
                             if folder.existingFileCount > 0 {
-                                Text("(\(folder.existingFileCount) esistenti)")
+                                Text(L10n.tr("(%ld esistenti)", folder.existingFileCount))
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -225,7 +225,7 @@ struct ContentView: View {
                              total: Double(max(model.plan?.files.count ?? 1, 1)))
                 .accessibilityLabel("Avanzamento copia o spostamento")
                 HStack {
-                    Text("\(model.completed) file completati").font(.caption.monospacedDigit())
+                    Text(L10n.tr("%ld file completati", model.completed)).font(.caption.monospacedDigit())
                     Spacer()
                     if model.isRecovering {
                         ProgressView("Ripristino in corso…")
@@ -249,7 +249,7 @@ struct ContentView: View {
             Spacer()
             Button("Anteprima") { model.preview() }
                 .disabled(!model.canPreview)
-            Button(model.mode == .move ? "Sposta file…" : "Copia file…") {
+            Button(model.mode == .move ? L10n.tr("Sposta file…") : L10n.tr("Copia file…")) {
                 model.showConfirmation = true
             }
             .buttonStyle(.borderedProminent)
@@ -259,8 +259,8 @@ struct ContentView: View {
 
     private func folderRow(_ label: String, url: URL?, select: @escaping () -> Void) -> some View {
         HStack(spacing: 12) {
-            Text(label).frame(width: 110, alignment: .leading)
-            Text(url?.path ?? "Nessuna cartella selezionata")
+            Text(L10n.tr(label)).frame(width: 110, alignment: .leading)
+            Text(url?.path ?? L10n.tr("Nessuna cartella selezionata"))
                 .foregroundStyle(url == nil ? .secondary : .primary)
                 .lineLimit(1).truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .leading)

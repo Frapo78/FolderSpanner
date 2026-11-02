@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import CryptoKit
 import Foundation
+import FolderSpannerCore
 
 /// User-initiated updater for official Frapo78/FolderSpanner GitHub Releases.
 /// Checks ZIP SHA-256 and ad-hoc code integrity; ad-hoc signatures do NOT
@@ -33,7 +34,7 @@ final class GitHubUpdater: ObservableObject {
     func checkForUpdates() {
         guard !isWorking else { return }
         isWorking = true
-        status = "Controllo GitHub Releases…"
+        status = L10n.tr("Controllo GitHub Releases…")
         actionTask = Task {
             do {
                 var request = URLRequest(url: Self.releasesURL)
@@ -51,13 +52,13 @@ final class GitHubUpdater: ObservableObject {
                 let currentSHA = Bundle.main.object(forInfoDictionaryKey: "FSGitSHA") as? String ?? ""
                 let sameCommit = !currentSHA.isEmpty && latest.tag_name.contains(String(currentSHA.prefix(7)))
                 if sameCommit {
-                    status = "FolderSpanner è già aggiornato (\(latest.tag_name))."
+                    status = L10n.tr("FolderSpanner è già aggiornato (%@).", latest.tag_name)
                 } else {
-                    status = "Disponibile: \(latest.tag_name)."
+                    status = L10n.tr("Disponibile: %@.", latest.tag_name)
                     availableRelease = latest
                 }
             } catch {
-                status = "Verifica aggiornamenti non riuscita: \(error.localizedDescription)"
+                status = L10n.tr("Verifica aggiornamenti non riuscita: %@", error.localizedDescription)
             }
             isWorking = false
         }
@@ -65,14 +66,14 @@ final class GitHubUpdater: ObservableObject {
 
     func cancel() {
         actionTask?.cancel()
-        status = "Operazione annullata."
+        status = L10n.tr("Operazione annullata.")
         isWorking = false
     }
 
     func install(_ release: Release) {
         guard !isWorking else { return }
         isWorking = true
-        status = "Scaricamento e verifica in corso…"
+        status = L10n.tr("Scaricamento e verifica in corso…")
         actionTask = Task {
             do {
                 let installed = Bundle.main.bundleURL.standardizedFileURL
@@ -87,10 +88,10 @@ final class GitHubUpdater: ObservableObject {
                 let prepared = try await Self.prepareUpdate(release: release)
                 try Task.checkCancellation()
                 try Self.launchReplacementHelper(existing: installed, prepared: prepared)
-                status = "Aggiornamento pronto. FolderSpanner viene riavviato."
+                status = L10n.tr("Aggiornamento pronto. FolderSpanner viene riavviato.")
                 NSApp.terminate(nil)
             } catch {
-                status = "Aggiornamento non installato: \(error.localizedDescription)"
+                status = L10n.tr("Aggiornamento non installato: %@", error.localizedDescription)
                 isWorking = false
             }
         }
@@ -98,7 +99,7 @@ final class GitHubUpdater: ObservableObject {
 
     private struct UpdaterError: LocalizedError {
         let message: String
-        init(_ value: String) { message = value }
+        init(_ value: String) { message = L10n.tr(value) }
         var errorDescription: String? { message }
     }
 
@@ -168,7 +169,7 @@ final class GitHubUpdater: ObservableObject {
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
-            throw UpdaterError("La verifica \(URL(fileURLWithPath: executable).lastPathComponent) è fallita.")
+            throw UpdaterError(L10n.tr("La verifica %@ è fallita.", URL(fileURLWithPath: executable).lastPathComponent))
         }
     }
 

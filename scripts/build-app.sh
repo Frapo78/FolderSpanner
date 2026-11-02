@@ -16,6 +16,7 @@ if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ ! "$BUILD_NUMBER" =~
   exit 1
 fi
 
+python3 scripts/check-localizations.py
 swift build -c release --product FolderSpanner --arch arm64
 BIN_DIR="$(swift build -c release --product FolderSpanner --arch arm64 --show-bin-path)"
 EXECUTABLE="$BIN_DIR/FolderSpanner"
@@ -29,6 +30,15 @@ APP="$ROOT/dist/FolderSpanner.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$EXECUTABLE" "$APP/Contents/MacOS/FolderSpanner"
+
+# Native bundle localization is required for SwiftUI and Foundation messages.
+for folder in "$ROOT"/Sources/FolderSpannerCore/Resources/*.lproj; do
+  test -d "$folder" || { echo "Localizations are missing" >&2; exit 1; }
+  cp -R "$folder" "$APP/Contents/Resources/"
+done
+for language in it en de fr es zh-Hans ja; do
+  test -s "$APP/Contents/Resources/$language.lproj/Localizable.strings" || { echo "Missing translation: $language" >&2; exit 1; }
+done
 
 # Generate the real PNG bitmap and macOS ICNS without third-party dependencies.
 ICON="$APP/Contents/Resources/FolderSpanner-1024.png"
@@ -52,6 +62,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key><string>it.frapo.folder-spanner</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>FolderSpanner</string>
+  <key>CFBundleDevelopmentRegion</key><string>it</string>
   <key>CFBundleDisplayName</key><string>FolderSpanner</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$APP_VERSION</string>
