@@ -255,9 +255,12 @@ public enum SpanExecutor {
     public static func transfer(_ item: PlannedFile, mode: TransferMode,
                                 fileManager fm: FileManager = .default) throws {
         // Double-check before every destructive operation (no overwrite policy).
-        let values = try item.source.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
-        guard values.isRegularFile == true, values.isSymbolicLink != true,
-              Int64(values.fileSize ?? -1) == item.bytes else {
+        // Use fresh FileManager attributes rather than URLResourceValues, which can
+        // return cached file sizes on macOS when a file changes after preview.
+        let sourceAttributes = try fm.attributesOfItem(atPath: item.source.path)
+        let sourceType = sourceAttributes[.type] as? FileAttributeType
+        let currentSize = (sourceAttributes[.size] as? NSNumber)?.int64Value
+        guard sourceType == .typeRegular, currentSize == item.bytes else {
             throw SpannerError("Il file origine è cambiato dall'anteprima: \(item.source.lastPathComponent)")
         }
         let folder = item.destination.deletingLastPathComponent()
