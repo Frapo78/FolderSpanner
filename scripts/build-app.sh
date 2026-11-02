@@ -16,6 +16,7 @@ if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ ! "$BUILD_NUMBER" =~
   exit 1
 fi
 
+python3 scripts/check-localizations.py
 swift build -c release --product FolderSpanner --arch arm64
 BIN_DIR="$(swift build -c release --product FolderSpanner --arch arm64 --show-bin-path)"
 EXECUTABLE="$BIN_DIR/FolderSpanner"
