@@ -17,3 +17,6 @@
 
 - All new user-visible strings must be translated in every `Sources/FolderSpannerCore/Resources/*.lproj/Localizable.strings` table; preserve format argument specifiers and run `python3 scripts/check-localizations.py`.
 - Keep filename patterns and user-selected paths stable regardless of UI locale. Italian is the fallback language.
+
+- Catalog generation must never mutate source files, must avoid following symlinks, must publish only complete files, and must leave prior catalogs untouched on cancellation or failure.
+- The window header must display the same icon artwork as the macOS app bundle; do not substitute an unrelated system symbol.
