@@ -72,7 +72,7 @@ public enum SpanRecovery {
             guard attributes[.type] as? FileAttributeType == .typeRegular,
                   (attributes[.size] as? NSNumber)?.int64Value == file.bytes,
                   let inode = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value else {
-                throw SpannerError("Il file origine è cambiato durante la preparazione: \(file.source.lastPathComponent)")
+                throw SpannerError(L10n.tr("Il file origine è cambiato durante la preparazione: %@", file.source.lastPathComponent))
             }
             let sourceParent = file.source.deletingLastPathComponent().path
             if checkedDirectories.insert(sourceParent).inserted {
@@ -81,7 +81,7 @@ public enum SpanRecovery {
                 }
             }
             guard !fm.fileExists(atPath: file.destination.path) else {
-                throw SpannerError("Destinazione occupata: \(file.destination.path)")
+                throw SpannerError(L10n.tr("Destinazione occupata: %@", file.destination.path))
             }
             let parent = file.destination.deletingLastPathComponent()
             if !fm.fileExists(atPath: parent.path) { folders.insert(parent.path) }
@@ -124,11 +124,11 @@ public enum SpanRecovery {
             let targetExists = fm.fileExists(atPath: dest.path)
             if sourceExists && !targetExists { continue } // File not yet transferred.
             if sourceExists && targetExists {
-                issues.append("Conflitto: esistono sia origine sia destinazione per \(source.lastPathComponent)")
+                issues.append(L10n.tr("Conflitto: esistono sia origine sia destinazione per %@", source.lastPathComponent))
                 continue
             }
             if !sourceExists && !targetExists {
-                issues.append("File non trovato: \(source.lastPathComponent)")
+                issues.append(L10n.tr("File non trovato: %@", source.lastPathComponent))
                 continue
             }
             do {
@@ -136,16 +136,16 @@ public enum SpanRecovery {
                 guard attrs[.type] as? FileAttributeType == .typeRegular,
                       (attrs[.systemFileNumber] as? NSNumber)?.uint64Value == entry.fileNumber,
                       (attrs[.size] as? NSNumber)?.int64Value == entry.originalSize else {
-                    issues.append("File modificato o sostituito: \(dest.path)")
+                    issues.append(L10n.tr("File modificato o sostituito: %@", dest.path))
                     continue
                 }
                 guard fm.fileExists(atPath: source.deletingLastPathComponent().path) else {
-                    issues.append("Cartella originale mancante: \(source.deletingLastPathComponent().path)")
+                    issues.append(L10n.tr("Cartella originale mancante: %@", source.deletingLastPathComponent().path))
                     continue
                 }
                 try fm.moveItem(at: dest, to: source)
                 restored += 1
-            } catch { issues.append("\(source.lastPathComponent): \(error.localizedDescription)") }
+            } catch { issues.append(L10n.tr("%@: %@", source.lastPathComponent, error.localizedDescription)) }
         }
 
         for folder in manifest.createdFolders.sorted(by: { $0.count > $1.count }) {
@@ -154,7 +154,7 @@ public enum SpanRecovery {
                     if try fm.contentsOfDirectory(atPath: folder).isEmpty {
                         try fm.removeItem(atPath: folder)
                     }
-                } catch { issues.append("Impossibile rimuovere la cartella \(folder): \(error.localizedDescription)") }
+                } catch { issues.append(L10n.tr("Impossibile rimuovere la cartella %@: %@", folder, error.localizedDescription)) }
             }
         }
         if issues.isEmpty { try fm.removeItem(at: url) }
