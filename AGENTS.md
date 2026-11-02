@@ -14,3 +14,6 @@
 
 - Do not claim guaranteed disaster recovery after disk failures or external edits. Rollback is same-volume and may require manual intervention; preserve the manifest on conflicts.
 - Keep developer backups during in-app updates and never install without explicit consent, checksum and bundle identity verification.
+
+- All new user-visible strings must be translated in every `Sources/FolderSpannerCore/Resources/*.lproj/Localizable.strings` table; preserve format argument specifiers and run `python3 scripts/check-localizations.py`.
+- Keep filename patterns and user-selected paths stable regardless of UI locale. Italian is the fallback language.
