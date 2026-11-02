@@ -23,3 +23,13 @@
 - Optional multiple output roots and distribution policies
 
 All versions remain free and open source.
+
+## v0.2 development branch
+- [x] Naming presets, including the 001 sequence
+- [x] Cancellable preview and transfer progress
+- [x] On-volume disaster recovery with a persistent journal and conservative rollback
+- [x] Native bitmap/ICNS generator
+- [x] Slow-disk fast path: no directory re-scan per file
+- [x] GitHub release update check, ZIP hash verification, guarded app replacement
+- [ ] Green macOS CI, app UX inspection and physical-Mac validation
+- [ ] Further recovery robustness against simultaneous filesystem changes

@@ -6,6 +6,18 @@ FolderSpanner divides large file collections into numbered folders. Built with *
 
 > **Status: v0.1.0 developer preview.** The core has automated tests. CI builds the macOS Apple Silicon app and publishes ZIP previews after successful testing. UI usability on a physical Mac still requires validation. Downloads are ad-hoc signed, **not** Developer ID signed or notarized.
 
+## Novità in sviluppo: v0.2
+
+- **Preset nomi:** numerico, tre cifre (001, 002), quattro cifre, Batch, Parte, Cartella, con data, personalizzato.
+- **Progresso e Annulla:** la scansione mostra attività indeterminata e avanzamento numerico durante il raggruppamento; spostamento/copia mostrano il contatore file.
+- **Disaster Recovery (default ON per spostamenti):** crea un manifesto di ripristino prima del primo movimento; prova un rollback in caso di errore o annullamento; permette ripristino dopo riavvio. Funziona solo tra cartelle dello **stesso volume**. Se spento, non viene allocato il manifesto.
+- **Limiti:** guasti fisici, cambiamenti esterni e file mancanti possono rendere impossibile il ripristino esatto. In tal caso il programma non sovrascrive e conserva il manifesto per il recupero manuale.
+- **Velocità:** evita elenchi ripetuti della cartella di destinazione ad ogni trasferimento (spostamenti sullo stesso volume normalmente sono rename di metadati).
+- **Icona:** bitmap PNG 1024px e ICNS generati nativamente dallo script di build.
+- **Aggiornamenti GitHub:** controllo su richiesta, download ZIP da release ufficiale, confronto SHA-256 e verifica del bundle, sostituzione al termine del processo con backup della vecchia app. Serve una directory di installazione scrivibile, per esempio `~/Applications`.
+
+⚠️ Il sistema di aggiornamento usa una firma **ad hoc** e non autentica il produttore: richiede fiducia nell'account GitHub e nel trasporto HTTPS. Non vengono installati aggiornamenti senza consenso esplicito.
+
 ## Features in this first version
 
 - Pick a source and destination folder in the native macOS interface.

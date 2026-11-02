@@ -33,7 +33,7 @@ jobs:
             PREVIEW=false
           elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             TAG="dev-${GITHUB_RUN_ID}-a${GITHUB_RUN_ATTEMPT}-${GITHUB_SHA:0:7}"
-            VERSION="0.1.0"
+            VERSION="0.2.0"
             PREVIEW=true
           else
             echo "Pubblicazione permessa solo da main o da tag vX.Y.Z" >&2
