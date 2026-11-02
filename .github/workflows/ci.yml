@@ -1,21 +1,18 @@
-name: macOS Swift build and tests
+name: macOS Swift pull request validation
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   macos:
-    runs-on: macos-15
+    runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Check Swift and build tests
+      - name: Run Swift tests
         run: swift test
-      - name: Build unsigned ad-hoc app (Apple Silicon)
+      - name: Build Apple Silicon app
         run: bash scripts/build-app.sh
-      - name: Zip application
-        run: ditto -c -k --sequesterRsrc --keepParent dist/FolderSpanner.app dist/FolderSpanner-macOS-arm64.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          name: FolderSpanner-macOS-arm64
-          path: dist/FolderSpanner-macOS-arm64.zip

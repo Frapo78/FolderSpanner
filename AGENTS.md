@@ -8,3 +8,6 @@
 - Distinguish confirmed tested behavior from planned behavior in documentation.
 - Keep dependency-free Swift Package builds and the ad-hoc `.app` packaging script working.
 - Make safety changes testable before adding UX polish or new features.
+
+- Every change to `main` must keep the automatic macOS preview release workflow healthy; never publish failed tests or a failed build.
+- Release ZIPs contain the native `.app` and a SHA-256 manifest, and must clearly disclose ad-hoc signing and the lack of Apple notarization.

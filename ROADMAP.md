@@ -7,7 +7,7 @@
 - [x] Preview, explicit execution confirmation, copy/move, cancellation between files
 - [x] No-overwrite checks, hidden files option, recursive mode, test suite
 - [ ] Verify full native app UX and ad-hoc bundle on an actual Apple Silicon Mac
-- [ ] Observe green macOS CI run
+- [ ] Observe a green macOS GitHub Actions run and confirm the app launches on a physical Mac
 
 ## v0.2 safety and usability
 - Persist preferences and recent patterns
@@ -17,8 +17,8 @@
 - Improve support for deeply nested directory trees and packages
 
 ## v0.3 distribution
-- Automatic release packaging with immutable checksums
-- Developer ID signing and Apple notarization if certificates are available
+- [x] Automatic ZIP publication via GitHub Releases on successful main pushes and version tags, with SHA-256 manifest
+- [ ] Developer ID signing and Apple notarization if certificates are available
 - Italian and English localization, native icon, accessibility review
 - Optional multiple output roots and distribution policies
 

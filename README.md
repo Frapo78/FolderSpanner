@@ -4,7 +4,7 @@
 
 FolderSpanner divides large file collections into numbered folders. Built with **SwiftUI + Foundation**; no Python runtime, third-party dependencies or analytics.
 
-> **Status: v0.1.0 developer preview.** The core has automated tests. macOS app packaging and UI must be validated on an Apple Silicon Mac and by GitHub Actions before any stable release. No signed/notarized release is published yet.
+> **Status: v0.1.0 developer preview.** The core has automated tests. CI builds the macOS Apple Silicon app and publishes ZIP previews after successful testing. UI usability on a physical Mac still requires validation. Downloads are ad-hoc signed, **not** Developer ID signed or notarized.
 
 ## Features in this first version
 
@@ -18,6 +18,26 @@ FolderSpanner divides large file collections into numbered folders. Built with *
 - For interrupted **moves**, re-scan to fill partially populated folders; already moved files are no longer in the source.
 - Cancel between files, see progress and a status summary.
 
+## Download a compiled app (macOS Apple Silicon)
+
+**[GitHub Releases — ZIP builds](https://github.com/Frapo78/FolderSpanner/releases)**
+
+- Every successful push to `main` publishes a **Development Preview** release containing `FolderSpanner-macOS-arm64-<tag>.zip` and `SHA256SUMS.txt`.
+- A Git tag in the form `vX.Y.Z` publishes a versioned release (only create version tags after reviewing and testing the build).
+- Both workflows run `swift test`, build the native ARM64 executable on the `macos-26` Apple Silicon runner, validate the ad-hoc signature, and verify ZIP integrity.
+- To install: download the ZIP from Releases, double-click to extract, then move `FolderSpanner.app` into Applications. Because this app is not yet Apple notarized, macOS may block the first launch; use the documented security override in System Settings if you trust the release.
+- Check `SHA256SUMS.txt` against the downloaded ZIP with `shasum -a 256 -c SHA256SUMS.txt` in the download directory. The checksum helps detect download corruption but is **not** a trusted-code signature.
+- Builds are free and do not include third-party dependencies. If tests/build fail, a release is **not** published.
+
+### Tagging a reviewed version
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+A tag build uses `CFBundleShortVersionString` from the version number. Development builds are identified in their ZIP and release names by unique run IDs.
+
 ## Run from source (macOS 13+, Apple Silicon)
 
 Requires Xcode / Xcode Command Line Tools with Swift 5.9+.
@@ -30,7 +50,7 @@ bash scripts/build-app.sh
 open dist/FolderSpanner.app
 ```
 
-`build-app.sh` creates an **ad-hoc signed** local app (not Apple-notarized). macOS may require manual approval to open apps built outside the App Store. The bundle is placed in `dist/` and can be copied to `/Applications` if desired. CI produces a zipped build artifact on successful runs; these are not stable releases.
+`build-app.sh` creates an **ad-hoc signed** local app (not Apple-notarized). macOS may require manual approval to open apps built outside the App Store. The bundle is placed in `dist/` and can be copied to `/Applications` if desired. CI generates ZIP assets in the [Releases](https://github.com/Frapo78/FolderSpanner/releases) section after successful builds. A regular push creates a prerelease; a semver tag creates a versioned release.
 
 ## Example: Commodore Amiga TOSEC ADF
 
