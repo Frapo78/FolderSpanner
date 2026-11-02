@@ -4,7 +4,7 @@
 
 FolderSpanner divides large file collections into numbered folders. Built with **SwiftUI + Foundation**; no Python runtime, third-party dependencies or analytics.
 
-> **Status: v0.1.0 developer preview.** The core has automated tests. CI builds the macOS Apple Silicon app and publishes ZIP previews after successful testing. UI usability on a physical Mac still requires validation. Downloads are ad-hoc signed, **not** Developer ID signed or notarized.
+> **Status: v0.2.0 development preview.** Automated macOS tests and app compilation have passed on the pull request. GitHub publishes an Apple Silicon ZIP after successful tests on `main`. The UI and updater still require hands-on validation on a physical Mac. The app is ad-hoc signed, **not** Developer ID signed or notarized.
 
 ## Novità in sviluppo: v0.2
 
