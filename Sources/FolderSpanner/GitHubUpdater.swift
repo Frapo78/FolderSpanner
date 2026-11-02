@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import CryptoKit
 import Foundation
+import FolderSpannerCore
 
 /// User-initiated updater for official Frapo78/FolderSpanner GitHub Releases.
 /// Checks ZIP SHA-256 and ad-hoc code integrity; ad-hoc signatures do NOT
