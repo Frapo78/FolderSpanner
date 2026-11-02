@@ -71,8 +71,17 @@ public enum SpanCatalog {
         func checkCancel() throws {
             if shouldCancel() { throw CancellationError() }
         }
+        // Batch small Markdown rows so external HDDs and slower flash media do
+        // not need a separate write syscall for each file in the catalog.
+        var buffer = String()
+        func flush() throws {
+            guard !buffer.isEmpty else { return }
+            try handle.write(contentsOf: Data(buffer.utf8))
+            buffer.removeAll(keepingCapacity: true)
+        }
         func write(_ text: String) throws {
-            try handle.write(contentsOf: Data(text.utf8))
+            buffer += text
+            if buffer.utf8.count >= 131_072 { try flush() }
         }
         func markdown(_ name: String) -> String {
             name.replacingOccurrences(of: "\\", with: "\\\\")
@@ -155,6 +164,7 @@ public enum SpanCatalog {
         try write("- Files: " + String(fileCount) + "\n")
         try write("- Folders containing files: " + String(folderCount) + "\n")
         try write("- Total bytes: " + String(byteCount) + "\n")
+        try flush()
         try handle.synchronize()
         try handle.close()
         try checkCancel()
