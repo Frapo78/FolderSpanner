@@ -108,6 +108,30 @@ For 450 files, the resulting layout will be:
 
 These are illustrative paths: replace them with existing directories on your own machine. No actual file is moved or copied during the preview.
 
+## Markdown file catalog
+
+FolderSpanner can create a **plain-text Markdown index** named `FolderSpanner-catalog.md`. It is saved at the **root of the destination** after a successful split/copy/move when **Generate Markdown catalog after transfer** is enabled (on by default). Catalog creation happens after a completed transfer, so cancelling catalog generation does **not** undo the already transferred files. A prior catalog may be replaced when this option is enabled.
+
+To create a catalog **without splitting or moving anything**, select the **Create catalog** tab, choose any folder, choose whether to scan subfolders recursively and whether to include hidden files, then select **Generate catalog**. An existing catalog requires explicit replacement confirmation in standalone mode.
+
+Example (illustrative file tree):
+
+```text
+/my/path/to/dest/
+├── FolderSpanner-catalog.md
+├── 001/
+│   ├── alpha.bin
+│   └── beta.bin
+└── 002/
+    └── gamma.bin
+```
+
+The catalog is UTF-8 Markdown, with a header (root, creation timestamp, scan options), sections for each folder, filename/relative-path/size columns, and a final total. It can be opened in TextEdit, VS Code, or any Markdown reader. It lists actual files on disk, not an imaginary plan.
+
+**Safety and performance:** The scanner reads filesystem metadata, not file contents; it processes one directory at a time and writes incrementally to a temporary file. A canceled or failed scan deletes that temporary file and preserves any previous catalog. Symbolic links and macOS package contents are not recursively traversed. Recursive scanning is optional in standalone mode and always enabled for the destination catalog after spanning. No cryptographic file hashes are calculated.
+
+**Icon consistency:** The app icon is generated as original blue stacked tiles and the same installed application icon is shown in the window header. The Finder, Dock, and UI therefore share the identical artwork.
+
 ## Important limitations and safety
 
 - **Backup first.** Copy/move operations are not transactionally reversible. Cross-volume moves can involve copying then deleting files.
